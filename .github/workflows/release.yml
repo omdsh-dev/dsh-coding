@@ -1,0 +1,182 @@
+# 多平台打包并发布 GitHub Release（pre-release）
+#
+# 触发方式：
+#   1. push 到 main 分支：自动发布 pre-release（版本号 <pkg-version>-rc.<run>，每次运行唯一）
+#   2. workflow_dispatch（手动）：可选填版本号（如 v0.1.0-rc.1），缺省用 package.json version
+#   3. push tag：v*（如 v0.1.0-rc.1）
+#
+# 注意：
+#   - deepseek-harness-desktop 不支持交叉编译（SEA 与 Wails 壳只能在本机平台构建），
+#     因此每个平台/架构各用一个 runner：macOS x64（macos-15-intel）+ macOS arm64
+#     （macos-latest）+ Linux x64 + Windows x64，产物分别上传后由 release job 汇总发布。
+#   - @morlay/session-persistence-rdb 发布在 GitHub Packages，pnpm install 需要认证：
+#     在仓库 Settings → Secrets 配置 GH_NPM_TOKEN（PAT，read:packages 权限），
+#     未配置时回退用 GITHUB_TOKEN（仅当包与当前仓库同属一个账号/组织时可用）。
+#   - Linux 壳构建走 Wails v3 的 gtk4 路径（go build 无 -tags gtk3），
+#     需要 libgtk-4-dev + libwebkitgtk-6.0-dev 等系统包（见 build 步骤）。
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 发布版本号（如 v0.1.0-rc.1；缺省使用 package.json 的 version）
+        required: false
+        type: string
+        default: ""
+      prerelease:
+        description: 发布为 pre-release
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 打包 ${{ matrix.name }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest # arm64
+            name: macos
+          - os: ubuntu-latest
+            name: linux
+          - os: windows-latest
+            name: windows
+    env:
+      MISE_ENV: "ci"
+
+    steps:
+      - name: Checkout 工作区
+        uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v4
+
+      - name: 安装 Linux 系统依赖（Wails gtk4 路径）
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config \
+            libgtk-4-dev libwebkitgtk-6.0-dev libsoup-3.0-dev \
+            libglib2.0-dev libx11-dev
+
+      - name: 配置 GitHub Packages 认证
+        shell: bash
+        run: |
+          # 必须配置 GH_NPM_TOKEN（PAT，read:packages）：@morlay 的包发布在
+          # morlay 个人账号下，与仓库跨账号，GITHUB_TOKEN（ghs_）必然 403。
+          # 若包与仓库同属一个账号，可改回 ${{ secrets.GH_NPM_TOKEN || secrets.GITHUB_TOKEN }}。
+          TOKEN="${{ secrets.GH_NPM_TOKEN }}"
+          case "$TOKEN" in
+            ghp_*)
+              echo "使用 GH_NPM_TOKEN（PAT）。"
+              ;;
+            "")
+              echo "::error::GH_NPM_TOKEN 未配置。请在仓库 Settings → Secrets and variables → Actions 新建 secret：名称 GH_NPM_TOKEN，值填入 read:packages 权限的 PAT（ghp_ 开头）。"
+              exit 1
+              ;;
+            *)
+              echo "::error::GH_NPM_TOKEN 格式异常（应为 ghp_ 开头的 PAT）。当前值以 ${TOKEN:0:4} 开头。"
+              exit 1
+              ;;
+          esac
+          printf '//npm.pkg.github.com/:_authToken=%s\n' "$TOKEN" >> .npmrc
+
+      - name: 解析版本号并同步 package.json
+        id: version
+        shell: bash
+        run: |
+          VER="${{ inputs.version }}"
+          if [ -z "$VER" ] && [[ "$GITHUB_REF_NAME" == v* ]]; then VER="${GITHUB_REF_NAME#v}"; fi
+          # main 分支推送：始终发布 pre-release，版本 <pkg-version>-rc.<run>（每次运行唯一）
+          if [ -z "$VER" ] && [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_name }}" = "main" ]; then
+            VER="$(node -p "require('./package.json').version.split('-')[0]")-rc.${{ github.run_number }}"
+          fi
+          if [ -z "$VER" ]; then VER="$(node -p "require('./package.json').version")"; fi
+          VER="${VER#v}"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          npm version "${VER}" --no-git-tag-version
+
+      - name: 打包（bundle --force）
+        shell: bash
+        run: |
+          deepseek-harness-desktop bundle --force "${{ github.workspace }}"
+
+      - name: 整理产物（压缩 / 重命名）
+        shell: bash
+        env:
+          RUNNER_ARCH: ${{ runner.arch }} # X64 / ARM64（用于产物文件名）
+        run: |
+          # 产物在仓库根 target/（desktop 工具 v0.2+ 输出到工作区）
+          cd "${{ github.workspace }}/target/dsh-coding"
+          VER="${{ steps.version.outputs.version }}"
+          # tr 而非 ${VAR,,}：macOS runner 的 /bin/bash 是 3.2，不支持 bash 4+ 大小写转换
+          ARCH="$(printf '%s' "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')"
+          case "${{ matrix.name }}" in
+            macos)
+              # .app 在 target/dsh-coding/ 根，ditto 打包为 zip（保留资源叉与符号链接）
+              ditto -c -k --sequesterRsrc --keepParent dsh-coding.app "dsh-coding-${VER}-macos-${ARCH}.zip"
+              ;;
+            linux)
+              # tar.gz 由 bundle 生成在 linux/ 子目录，重命名后移到根统一上传
+              cd linux
+              mv dsh-coding.tar.gz "../dsh-coding-${VER}-linux-${ARCH}.tar.gz"
+              ;;
+            windows)
+              # zip 由 bundle 生成在 windows/ 子目录，重命名后移到根统一上传
+              cd windows
+              mv dsh-coding.zip "../dsh-coding-${VER}-windows-${ARCH}.zip"
+              ;;
+          esac
+          ls -lh "${{ github.workspace }}/target/dsh-coding"/dsh-coding-${VER}-*
+
+      - name: 上传构建产物（artifact）
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-coding-${{ matrix.name }}-${{ runner.arch }}
+          path: ${{ github.workspace }}/target/dsh-coding/dsh-coding-${{ steps.version.outputs.version }}-*
+          if-no-files-found: error
+
+  release:
+    name: 发布 Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 汇总各平台产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: 解析版本号
+        id: version
+        shell: bash
+        run: |
+          VER="${{ inputs.version }}"
+          if [ -z "$VER" ] && [[ "$GITHUB_REF_NAME" == v* ]]; then VER="${GITHUB_REF_NAME#v}"; fi
+          if [ -z "$VER" ]; then VER="$(ls artifacts | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?' | head -1)"; fi
+          VER="${VER#v}"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+
+      - name: 创建/更新 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', steps.version.outputs.version) }}
+          name: dsh-coding ${{ steps.version.outputs.version }}
+          prerelease: ${{ inputs.prerelease == true || contains(steps.version.outputs.version, '-') }}
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
