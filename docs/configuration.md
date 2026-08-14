@@ -33,7 +33,7 @@ dsh 的 cordis 配置是分层 patch 合成，从空根按序叠加：
 - `@deepseek-ai/dsh-web-app`：Web 表层（webserver、API 网关、workspace、投影缓存、存储、浏览器插件名录与 HMR 链）。
 - `@morlay/session-persistence-rdb`：RDB 会话持久化后端。
 - `dsh-message-edit`：消息编辑、重生成、重试与 Timeline 版本导航（浏览器插件注入）。
-- `dsh-better-sidebar`：增强侧边栏——资源管理器、编辑/预览（CodeMirror 6）、沙箱内嵌浏览器、xterm 真实终端、Git 面板与后台任务页（右侧栏 + 底部面板，浏览器插件注入）。
+- `dsh-better-sidebar`：增强侧边栏工作台（浏览器插件注入）。
 
 ## 会话持久化（session-persistence-rdb）
 

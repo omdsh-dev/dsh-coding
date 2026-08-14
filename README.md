@@ -6,7 +6,7 @@
 
 - `@morlay/session-persistence-rdb` —— RDB（SQLite / PostgreSQL）会话持久化，替换内置 JSONL 存储（发布在 GitHub Packages `@morlay` registry）；
 - [dsh-message-edit](https://github.com/Moeblack/dsh-message-edit) —— 消息编辑、重生成、重试与 Timeline 版本分支导航；
-- [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) —— 增强侧边栏：文件管理、编辑预览（CodeMirror）、内嵌浏览器、真实终端、Git 面板与后台任务页。
+- [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) —— 增强侧边栏（文件管理 / 编辑预览 / 内嵌浏览器 / 终端 / Git 面板）。
 
 ## 特性
 
@@ -14,7 +14,7 @@
 - **独立 DSH_HOME**：`dshHome: xdg` 将用户数据隔离在 `xdg.DataHome/<name>`（`name` 即 package.json 的 `name`，本发行版为 `dsh-coding`：macOS 为 `~/Library/Application Support/dsh-coding`，Linux 为 `~/.local/share/dsh-coding`），首次启动自动从应用种子补齐，**不污染 `~/.dsh`**。
 - **RDB 会话持久化**：默认 SQLite（WAL 模式），可切换 PostgreSQL；会话数据可靠落盘，替代官方 JSONL 后端。
 - **消息可编辑、可重来**：编辑已落定的用户消息与助手回复、从任意回合分支重生成、重试历史回合；Timeline 展示完整版本树，`←` / `→` 撤销与重施加，历史会话始终保留。
-- **内置开发工作台**（dsh-better-sidebar）：资源管理器、CodeMirror 编辑与 Office/图片/PDF 内联预览、沙箱内嵌浏览器、xterm 真实终端（可注入 `terminal_*` 工具）、Git 面板（diff/暂存/提交），右侧栏 + 底部面板双工作台。
+- **内置开发工作台**（[dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar)）：侧边栏与底部面板的文件 / 编辑预览 / 浏览器 / 终端 / Git 工作台。
 - **Web 前端**：完整 DSH Web GUI（会话、工具、Trajectory、Skill 等），由本地 HTTP 伺服。
 
 ## 快速开始
@@ -112,6 +112,7 @@ dsh-coding/
 - [deepseek-harness-desktop](https://github.com/omdsh-dev/deepseek-harness-desktop) —— 把 dsh web profile 打包为桌面应用的 Go 工具
 - [@morlay/session-persistence-rdb](https://github.com/morlay/session-persistence-rdb) —— RDB 会话持久化后端（GitHub Packages：`@morlay` scope，需在 `.npmrc` 配置 `//npm.pkg.github.com/:_authToken`）
 - [dsh-message-edit](https://github.com/Moeblack/dsh-message-edit) —— 消息编辑与版本分支插件
+- [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) —— 增强侧边栏工作台插件
 
 ## 许可
 
