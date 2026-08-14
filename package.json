@@ -1,0 +1,35 @@
+{
+  "name": "dsh-coding",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@morlay/session-persistence-rdb": "^0.0.2",
+    "dsh-better-sidebar": "^0.11.0",
+    "dsh-message-edit": "^0.2.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh": "0.1.0-rc.6"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@morlay/session-persistence-rdb",
+        "dsh-message-edit",
+        "dsh-better-sidebar"
+      ]
+    },
+    "desktop": {
+      "id": "ai.deepseek.dsh.coding",
+      "window": {
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600
+      },
+      "icon": "assets/icon.svg",
+      "dshHome": "xdg"
+    }
+  }
+}
