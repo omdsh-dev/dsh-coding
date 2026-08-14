@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@deepseek-ai/dsh':
+        specifier: 0.1.0-rc.6
+        version: 0.1.0-rc.6(fd5523c96ce48efb2fed26a957115364)
       '@morlay/session-persistence-rdb':
         specifier: ^0.0.2
         version: 0.0.2(0d5531b5db4b85e480015920443de5b1)
@@ -17,10 +20,6 @@ importers:
       dsh-message-edit:
         specifier: ^0.2.1
         version: 0.2.1
-    devDependencies:
-      '@deepseek-ai/dsh':
-        specifier: 0.1.0-rc.6
-        version: 0.1.0-rc.6(fd5523c96ce48efb2fed26a957115364)
 
 packages:
 

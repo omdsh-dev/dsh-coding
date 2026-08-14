@@ -7,7 +7,7 @@
     "dsh-better-sidebar": "^0.11.0",
     "dsh-message-edit": "^0.2.1"
   },
-  "devDependencies": {
+  "peerDependencies": {
     "@deepseek-ai/dsh": "0.1.0-rc.6"
   },
   "dsh": {
