@@ -1,0 +1,7 @@
+[tools]
+node = "26"
+go = "latest"
+pnpm = 'latest'
+
+[settings]
+minimum_release_age = '0'
