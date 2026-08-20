@@ -1,7 +1,8 @@
 [tools]
 node = "26"
 go = "latest"
-pnpm = 'latest'
+just = "latest"
+pnpm = '12.0.0-rc.6'
 
 [settings]
 minimum_release_age = '0'

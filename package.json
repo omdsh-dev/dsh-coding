@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@morlay/better-session": "^0.0.3",
-    "dsh-better-sidebar": "^0.12.3"
+    "@morlay/better-session": "^0.0.9",
+    "dsh-better-sidebar": "^0.14.0"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": "0.1.0-rc.6"
+    "@deepseek-ai/dsh": "0.1.0-rc.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
   },
   "dsh": {
     "profile": {

@@ -4,14 +4,15 @@ default:
 dep:
     pnpm install 
 
+clean:
+    rm -rf pnpm-lock.yaml
+    rm -rf node_modules/
+
 dev *args:
-    deepseek-harness-desktop dev {{ args }} .
+    dsh-web-desktopify dev {{ args }} .
 
 plugin *args:
-    deepseek-harness-desktop plugin {{ args }} 
+    dsh-web-desktopify plugin {{ args }} 
 
 bundle *args:
-    deepseek-harness-desktop bundle {{ args }} .
-
-clean:
-    rm -rf node_modules
+    dsh-web-desktopify bundle {{ args }} .
